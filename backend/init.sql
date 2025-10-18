@@ -12,7 +12,8 @@ DROP TABLE IF EXISTS skills_taxonomy CASCADE;
 
 -- Create skills_taxonomy table (from Function-Skills.csv)
 CREATE TABLE skills_taxonomy (
-    function_area VARCHAR(255) PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
+    function_area VARCHAR(255) NOT NULL,
     specialization VARCHAR(255) NOT NULL,
     UNIQUE(function_area, specialization)
 );
@@ -48,12 +49,7 @@ CREATE TABLE skills (
     employee_id VARCHAR(20) REFERENCES employees(employee_id) ON DELETE CASCADE,
     function_area VARCHAR(255),
     specialization VARCHAR(255),
-    skill_name VARCHAR(255),
-    CONSTRAINT fk_skills_function_area
-        FOREIGN KEY (function_area)
-        REFERENCES skills_taxonomy(function_area)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT
+    skill_name VARCHAR(255)
 );
 
 -- Competencies of employees
