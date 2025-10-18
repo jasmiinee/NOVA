@@ -4,6 +4,8 @@ import cors from "cors";
 import helmet from "helmet";
 import chatRoute from "./src/api/chat.js";
 import testOpenAIRoute from "./src/api/test-openai.js";
+import employeesRouter from './routes/employees.js';
+import skillsRouter from './routes/skills.js';
 
 const app = express();
 app.use(helmet());
@@ -23,6 +25,11 @@ app.get("/health", (_req, res) => res.json({ ok: true, ts: new Date().toISOStrin
 
 app.use("/api/chat", chatRoute);
 app.use("/api/test-openai", testOpenAIRoute);
+
+app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOString() }));
+
+app.use('/api/employees', employeesRouter);
+app.use('/api/skills', skillsRouter);
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => console.log(`API listening on http://localhost:${port}`));
