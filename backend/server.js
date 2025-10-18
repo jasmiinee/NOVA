@@ -6,6 +6,7 @@ import chatRoute from "./src/api/chat.js";
 import testOpenAIRoute from "./src/api/test-openai.js";
 import employeesRouter from './routes/employees.js';
 import skillsRouter from './routes/skills.js';
+import leadershipRouter from './routes/leadership.js';
 
 const app = express();
 app.use(helmet());
@@ -30,6 +31,8 @@ app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOS
 
 app.use('/api/employees', employeesRouter);
 app.use('/api/skills', skillsRouter);
+
+app.use('/api/leadership', leadershipRouter);
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => console.log(`API listening on http://localhost:${port}`));
