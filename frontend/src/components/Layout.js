@@ -20,6 +20,7 @@ export const Layout = ({ children }) => {
     const location = useLocation();
 
     const navigation = [
+        { name: 'Dashboard', href: '/', icon: Home },
         { name: 'Career Pathways', href: '/pathways', icon: TrendingUp },
     ];
 
