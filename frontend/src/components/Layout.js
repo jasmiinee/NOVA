@@ -21,6 +21,7 @@ export const Layout = ({ children }) => {
 
     const navigation = [
         { name: 'Career Pathways', href: '/pathways', icon: TrendingUp },
+        { name: 'AI Coach', href: '/aicoach', icon: MessageCircle },
     ];
 
     const isActive = (href) => location.pathname === href;
