@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { CareerPathways } from './pages/CareerPathways';
+import { AiCoach } from './pages/AiCoach';
 import './styles/App.css';
 import { Dashboard } from './pages/Dashboard';
 
@@ -12,6 +13,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/pathways" element={<CareerPathways />} />
+            <Route path="/coach" element={<AiCoach />} />
           </Routes>
         </Layout>
       </div>
