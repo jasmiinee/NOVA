@@ -2,18 +2,35 @@
 import React, { useEffect, useState } from 'react';
 import { Brain, TrendingUp, AlertCircle, Target, Users, Lightbulb } from 'lucide-react';
 
-export default function LeadershipPotential({ employeeId }) {
+export default function LeadershipPotential({ employeeId , token }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
-    fetch(`${process.env.REACT_APP_API_URL}/leadership/llm/${employeeId}`)
-      .then(res => res.json())
-      .then(setData)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [employeeId]);
+    const load = async () => {
+      try {
+        if (!employeeId) throw new Error('No employee selected');
+        setLoading(true);
+        const res = await fetch(
+          `${process.env.REACT_APP_API_URL}/leadership/llm/${employeeId}`,
+          {
+            headers: token
+              ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+              : { 'Content-Type': 'application/json' }
+          }
+        );
+        if (!res.ok) throw new Error(`Failed to fetch assessment: ${res.status}`);
+        const json = await res.json();
+        setData(json);
+      } catch (e) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [employeeId, token]);
 
   if (loading) {
     return (
@@ -23,7 +40,7 @@ export default function LeadershipPotential({ employeeId }) {
       </div>
     );
   }
-
+  if (error) return <div className="text-red-700 bg-red-50 border border-red-200 rounded-md p-4">{error}</div>;
   if (!data) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] text-gray-500 text-lg">
