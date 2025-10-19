@@ -1,5 +1,6 @@
 import fetch from "node-fetch";
 import { pool } from "../db.js";
+import { hashAspiration } from "../src/utils/hash.js";
 
 const AZURE_OPENAI_BASE = process.env.AZURE_OPENAI_BASE || "https://psacodesprint2025.azure-api.net";
 const DEPLOYMENT = process.env.AZURE_OPENAI_DEPLOYMENT || "gpt-4.1-nano";
@@ -25,7 +26,19 @@ export class CareerPathways {
     const llmText = await this.callAzureOpenAI(prompt);
 
     const parsed = safeParseJson(llmText, null);
-    return this.normalizeOrFallback({ parsed, empSkills, catalogue, aspiration });
+    const result = this.normalizeOrFallback({ parsed, empSkills, catalogue, aspiration });
+    const saved = await this.saveAssessment(
+      employeeId,
+      {
+        function_area: aspiration.function_area,
+        specialization: aspiration.specialization,
+        short_term: aspiration.short_term || '',
+        long_term: aspiration.long_term || '',
+      },
+      result
+    );
+
+    return { result, saved };
   }
 
   async getEmployee(employeeId) {
@@ -60,6 +73,57 @@ export class CareerPathways {
     }
     sql += ` ORDER BY specialization, skill_name`;
     const { rows } = await pool.query(sql, params);
+    return rows;
+  }
+
+  async saveAssessment(employeeId, aspiration, result) {
+    const aspiration_hash = hashAspiration(aspiration);
+    const client = await pool.connect();
+    try {
+      const { rows } = await client.query(
+        `
+        INSERT INTO employee_pathways (employee_id, aspiration, result, model_used, aspiration_hash)
+        VALUES ($1, $2::jsonb, $3::jsonb, $4, $5)
+        ON CONFLICT (employee_id, aspiration_hash)
+        DO UPDATE SET
+          result = EXCLUDED.result,
+          model_used = EXCLUDED.model_used,
+          generated_at = NOW()
+        RETURNING id, employee_id, aspiration, result, model_used, generated_at, aspiration_hash
+        `,
+        [employeeId, aspiration, result, result?.model_used ?? null, aspiration_hash]
+      );
+      return rows[0];
+    } finally {
+      client.release();
+    }
+  }
+
+  async getLatest(employeeId) {
+    const { rows } = await pool.query(
+      `
+      SELECT id, employee_id, aspiration, result, model_used, generated_at
+      FROM employee_pathways
+      WHERE employee_id = $1
+      ORDER BY generated_at DESC
+      LIMIT 1
+      `,
+      [employeeId]
+    );
+    return rows[0] || null;
+  }
+
+  async getHistory(employeeId, limit = 20) {
+    const { rows } = await pool.query(
+      `
+      SELECT id, employee_id, aspiration, result, model_used, generated_at
+      FROM employee_pathways
+      WHERE employee_id = $1
+      ORDER BY generated_at DESC
+      LIMIT $2
+      `,
+      [employeeId, limit]
+    );
     return rows;
   }
 
