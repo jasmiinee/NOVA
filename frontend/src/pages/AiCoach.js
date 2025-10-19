@@ -19,7 +19,7 @@ export const AiCoach = () => {
   const messagesEndRef = useRef(null);
 
   // Use environment variable or fallback to localhost
-  const API_URL = 'http://localhost:3001';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -52,7 +52,7 @@ export const AiCoach = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${API_URL}/api/chat`, {
+      const response = await fetch(`${API_URL}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
