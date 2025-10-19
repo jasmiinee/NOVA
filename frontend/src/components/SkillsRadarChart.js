@@ -22,7 +22,8 @@ ChartJS.register(
 );
 
 export const SkillsRadarChart = ({ skills = [] }) => {
-  const labels = skills.map((s) => s.skill);
+  const trim = (s, n = 28) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
+  const labels = skills.map((s) => trim(s.skill));
 
   const data = {
     labels,
@@ -30,7 +31,6 @@ export const SkillsRadarChart = ({ skills = [] }) => {
       {
         label: "Skill Level",
         data: skills.map((s) => s.level),
-        // You can change these or set via props/theme
         backgroundColor: "rgba(59,130,246,0.15)",
         borderColor: "rgba(59,130,246,1)",
         pointBackgroundColor: "white",
@@ -43,15 +43,13 @@ export const SkillsRadarChart = ({ skills = [] }) => {
 
   const options = {
     responsive: true,
-    // allow the canvas to size by CSS height/width rather than forcing aspect ratio
     maintainAspectRatio: false,
     layout: {
-      // extra breathing room around the whole chart (prevents clipped labels)
       padding: {
-        top: 0,
-        right: 20,
-        bottom: 0,
-        left: 20,
+        top: 6,
+        right: 16,
+        bottom: 6,
+        left: 16,
       },
     },
     plugins: {
@@ -63,6 +61,11 @@ export const SkillsRadarChart = ({ skills = [] }) => {
       },
       tooltip: {
         enabled: true,
+        callbacks: {
+          // show full label in tooltip
+          title: (items) => skills[items[0].dataIndex]?.skill || items[0].label,
+          label: (ctx) => `Level: ${ctx.parsed.r}/5`,
+        },
       },
     },
     scales: {
@@ -71,7 +74,7 @@ export const SkillsRadarChart = ({ skills = [] }) => {
         max: 5,
         ticks: {
           stepSize: 1,
-          // show radial ticks; adjust font if needed
+          display: false,
           color: "#6b7280",
         },
         grid: {
@@ -93,10 +96,7 @@ export const SkillsRadarChart = ({ skills = [] }) => {
   };
 
   return (
-    // parent container controls visual size; height is important so labels have space
-    <div style={{ width: "100%", height: 270 }}>
-      <Radar data={data} options={options} />
-    </div>
+    <Radar data={data} options={options} />
   );
 };
 
