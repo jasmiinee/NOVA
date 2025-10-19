@@ -52,6 +52,8 @@ export const apiService = {
 
     // Career Pathways
     assessPathways: (payload) => api.post('/pathways/assess', payload),
+    getLatestPathways: (employeeId) => api.get(`/pathways/latest/${employeeId}`),
+    getPathwaysHistory: (employeeId, limit = 20) => api.get(`/pathways/history/${employeeId}?limit=${limit}`),
 }
 
 export default api;
