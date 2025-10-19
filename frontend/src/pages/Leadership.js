@@ -6,7 +6,7 @@ import LeadershipPotential from '../components/LeadershipPotential';
 export const Leadership = () => {
   const { employeeId } = useParams();
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="big-white rounded-lg">
       <LeadershipPotential employeeId={employeeId || 'EMP-20001'} />
     </div>
   );
