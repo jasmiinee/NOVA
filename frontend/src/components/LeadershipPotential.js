@@ -13,7 +13,7 @@ export default function LeadershipPotential({ employeeId , token }) {
         if (!employeeId) throw new Error('No employee selected');
         setLoading(true);
         const res = await fetch(
-          `${process.env.REACT_APP_API_URL}/leadership/llm/${employeeId}`,
+          `${process.env.REACT_APP_API_URL}/leadership/llm/${employeeId}/cached`,
           {
             headers: token
               ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
