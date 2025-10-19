@@ -50,7 +50,7 @@ export const SkillsRadarChart = ({ skills = [] }) => {
       padding: {
         top: 0,
         right: 20,
-        bottom: 10,
+        bottom: 0,
         left: 20,
       },
     },
@@ -83,7 +83,7 @@ export const SkillsRadarChart = ({ skills = [] }) => {
         // point label styling (the labels around the radar)
         pointLabels: {
           // give a little padding so labels don't touch edges
-          padding: 10,
+          padding: 8,
           font: {
             size: 12,
           },
@@ -94,7 +94,7 @@ export const SkillsRadarChart = ({ skills = [] }) => {
 
   return (
     // parent container controls visual size; height is important so labels have space
-    <div style={{ width: "100%", height: 320 }}>
+    <div style={{ width: "100%", height: 270 }}>
       <Radar data={data} options={options} />
     </div>
   );
