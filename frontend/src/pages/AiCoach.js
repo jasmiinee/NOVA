@@ -5,7 +5,7 @@ export const AiCoach = () => {
   const [messages, setMessages] = useState([
     {
       id: 1,
-      message: "Hi! I'm PSA's AI Career Coach. I'm here to help you with your career development journey. What would you like to explore today?",
+      message: "Hi! I'm PSA's AI Chatbot. I'm here to help you with whatever you need. What would you like to explore today?",
       sender: 'ai',
       timestamp: new Date().toISOString()
     }
@@ -44,14 +44,15 @@ export const AiCoach = () => {
 
     try {
       const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: userInput
-        })
-      });
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    message: userInput,
+    employeeId: "EMP-20001" // get this from logged-in user
+  })
+});
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
