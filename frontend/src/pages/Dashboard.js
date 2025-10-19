@@ -158,18 +158,20 @@ export const Dashboard = () => {
 
       {/* Skills Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 text-center mb-4">Skills Overview</h3>
-          <div className="flex justify-center">
+        <div className="bg-white rounded-lg shadow p-4">
+          <h3 className="text-lg font-semibold text-gray-900 text-center">Skills Overview</h3>
+          <div className="flex items-center justify-center">
             {skills.length > 0 ? (
-              <SkillsRadarChart skills={skills} />
+              <div className="mx-auto" style={{ width: 480, height: 340 }}>
+                <SkillsRadarChart skills={skills} />
+              </div>
             ) : (
               <p className="text-gray-500 text-center py-8">No skills data available</p>
             )}
           </div>
           <Link
             to="/profile"
-            className="inline-flex items-center text-blue-600 hover:text-blue-800 mt-4"
+            className="inline-flex items-center text-blue-600 hover:text-blue-800"
           >
             View detailed skills
             <ArrowRight className="ml-1 h-4 w-4" />
