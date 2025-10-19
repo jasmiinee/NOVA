@@ -58,63 +58,70 @@ async function getUserContext(employeeId) {
       .map(e => `${e.degree} from ${e.institution}`)
       .join(', ');
 
+    const positions = positionsResult.rows
+      .map(p => `${p.role_title} at ${p.organization} (${p.start_date} - ${p.end_date})`)
+      .join('\n');
+
     // combine everything into a text that the ai can read
     return `
-      Employee Profile:
-      - Name: ${employee.name}
-      - Current Role: ${employee.job_title}
-      - Department: ${employee.department}
-      - In role since: ${employee.in_role_since}
-      - Location: ${employee.office_location}
+Employee Profile:
+- Name: ${employee.name}
+- Current Role: ${employee.job_title}
+- Department: ${employee.department}
+- In role since: ${employee.in_role_since}
+- Location: ${employee.office_location}
 
-      Skills & Expertise:
-      ${skills || 'Not specified'}
+Skills & Expertise:
+${skills || 'Not specified'}
 
-      Competencies:
-      ${competencies || 'Not specified'}
+Competencies:
+${competencies || 'Not specified'}
 
-      Education:
-      ${education || 'Not specified'}
+Education:
+${education || 'Not specified'}
 
-      Previous Roles:
-      ${positionsResult.rows.map(p => `${p.role_title} at ${p.organization} (${p.start_date} - ${p.end_date})`).join('\n') || 'Not specified'}
-      `;
-        } catch (err) {
-          console.error('Error fetching user context:', err);
-          return "";
-        }
-      }
+Previous Roles:
+${positions || 'Not specified'}`;
+  } catch (err) {
+    console.error('Error fetching user context:', err);
+    return "";
+  }
+}
 
-      // send everything to the ai chatbot
-      router.post("/", authenticateToken, async (req, res) => {
-        try {
-          const { message } = req.body;
-          const employeeId = req.employeeId; // From JWT token
-          
-          const userContext = await getUserContext(employeeId);
+// send everything to the ai chatbot
+router.post("/", authenticateToken, async (req, res) => {
+  try {
+    const { message } = req.body;
+    const employeeId = req.employeeId;
 
-          // guidelines for ai chatbot
-          const systemPrompt = `You are PSA's AI Chatbot. You have access to the following employee profile:
+    if (!message) return res.status(400).json({ error: "Message is required" });
+    if (!employeeId) return res.status(400).json({ error: "employeeId missing on request" });
 
-      ${userContext}
+    console.log("[chat] employeeId =", employeeId);
 
-      Your role is to:
-      1. Answer specific career development questions based on their profile
-      2. Provide personalized guidance aligned with their current role and skills
-      3. Suggest learning resources and opportunities for growth
-      4. Support their professional development journey
-      5. Provide conversational support for worker's engagement, mental well-being and continuous development 
+    const userContext = await getUserContext(employeeId);
+    console.log("[chat] userContext length =", userContext.length);
 
-      Be concise, actionable, and encouraging. Keep responses to 2-3 paragraphs unless more detail is needed.`;
+    const systemPrompt = `You are PSA's AI Career Coach. You have access to the following employee profile:
 
-      // sends both the user’s question and systemPrompt to chatWithAI() function, which generates a reply
-          const reply = await chatWithAI(message, systemPrompt);
-          // backend's response to the frontend message with the ai's message
-          res.json({ reply });
-        } catch (e) {
-          console.error(e);
-          res.status(500).json({ error: "Chat failed", details: e.message });
-        }
-  });
+${userContext || "(No profile data found for this employeeId)"}
 
-  export default router;
+Your role is to:
+1. Answer specific career development questions based on their profile
+2. Provide personalized guidance aligned with their current role and skills
+3. Suggest learning resources and opportunities for growth
+4. Support their professional development journey
+5. Provide conversational support for worker's engagement, mental well-being and continuous development
+
+If the profile is empty or incomplete, ask for the missing details (role, department, skills, goals) before giving guidance.
+Be concise, actionable, and encouraging. Keep responses to 2-3 paragraphs unless more detail is needed.`;
+
+    const reply = await chatWithAI(message, systemPrompt);
+    res.json({ reply });
+  } catch (e) {
+    console.error("Chat error:", e);
+    res.status(500).json({ error: "Chat failed", details: e.message });
+  }
+});
+
+export default router;
