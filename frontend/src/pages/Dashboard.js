@@ -11,7 +11,7 @@ import {
   Calendar,
   ArrowRight,
   Star,
-  MessageSquare
+  MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../services/AuthContext';
 import { SkillsRadarChart } from '../components/SkillsRadarChart';
@@ -20,6 +20,8 @@ export const Dashboard = () => {
   const { user, token } = useAuth();
   const [employeeData, setEmployeeData] = useState(null);
   const [skills, setSkills] = useState([]);
+  const [leadershipScore, setLeadershipScore] = useState(null);
+  const [leadershipTier, setLeadershipTier] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -77,6 +79,35 @@ export const Dashboard = () => {
     };
 
     fetchEmployeeData();
+
+    const ensureLeadershipScore = async () => {
+    if (!user?.employeeId || !token) return;
+    try {
+      const res = await fetch(
+        `${process.env.REACT_APP_API_URL}/leadership/llm/${user.employeeId}/cached`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setLeadershipScore(data.overall_score);
+        setLeadershipTier(data.tier);
+      } else if (res.status === 429) {
+        // Fallback to score if rate limited
+        const s = await fetch(
+          `${process.env.REACT_APP_API_URL}/leadership/${user.employeeId}/score`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (s.ok) {
+          const sd = await s.json();
+          setLeadershipScore(sd.overall_score);
+          setLeadershipTier(sd.tier);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+  ensureLeadershipScore();
   }, [user, token]);
 
   if (loading) {
@@ -91,12 +122,12 @@ export const Dashboard = () => {
     );
   }
 
-  const calculateDaysInRole = () => {
+  const calculateYearsInRole = () => {
     if (!employeeData?.in_role_since) return 'N/A';
     const startDate = new Date(employeeData.in_role_since);
     const today = new Date();
-    const daysInRole = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-    return daysInRole;
+    const years = Math.floor((today - startDate) / (1000 * 60 * 60 * 24))/365;
+    return years.toFixed(1);
   };
 
   return (
@@ -113,39 +144,27 @@ export const Dashboard = () => {
             </p>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <p className="text-sm text-gray-500">Days in current role</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {calculateDaysInRole()} days
-              </p>
-            </div>
             <UserCircleIcon aria-hidden className="h-20 w-20 text-gray-400" />
           </div>
         </div>
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard
-          title="Career Readiness"
-          value="75%"
+          title="Years at Company"
+          value={calculateYearsInRole()}
           icon={Target}
           color="blue"
-          trend="+5% this month"
+          trend="Going strong!"
         />
         <StatCard
-          title="Skills Developed"
-          value={skills.length || '12'}
-          icon={Award}
-          color="green"
-          trend="3 new this quarter"
-        />
-        <StatCard
-          title="Learning Hours"
-          value="48"
-          icon={BookOpen}
+          title="Leadership Readiness"
+          value={leadershipScore ? `${leadershipScore}/100` : 'N/A'}
+          icon={Star}
           color="purple"
-          trend="8 hrs this week"
+          trend={leadershipTier || 'View assessment'}
+          link="/leadership"
         />
         <StatCard
           title="Mentor Sessions"
