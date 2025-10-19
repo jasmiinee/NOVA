@@ -8,7 +8,8 @@ import {
   Award, 
   Calendar,
   ArrowRight,
-  Star
+  Star,
+  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '../services/AuthContext';
 import { SkillsRadarChart } from '../components/SkillsRadarChart';
@@ -31,7 +32,7 @@ export const Dashboard = () => {
 
         // Fetch employee profile
         const empResponse = await fetch(
-          `process.env.REACT_APP_API_URL/employees/${user.employeeId}`,
+          `${process.env.REACT_APP_API_URL}/employees/${user.employeeId}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -46,7 +47,7 @@ export const Dashboard = () => {
 
         // Fetch skills
         const skillsResponse = await fetch(
-          `process.env.REACT_APP_API_URL/employees/${user.employeeId}/skills`,
+          `${process.env.REACT_APP_API_URL}/employees/${user.employeeId}/skills`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -58,9 +59,9 @@ export const Dashboard = () => {
         if (skillsResponse.ok) {
           const skillsData = await skillsResponse.json();
           // Transform skills for radar chart (take top 6)
-          const formattedSkills = skillsData.slice(0, 6).map((skill, idx) => ({
+          const formattedSkills = skillsData.slice(0, 6).map((skill) => ({
             skill: skill.skill_name,
-            level: Math.floor(Math.random() * 3) + 3 // Random level 3-5 for now
+            level: skill.proficiency_level || Math.floor(Math.random() * 3) + 3
           }));
           setSkills(formattedSkills);
         }
@@ -116,9 +117,11 @@ export const Dashboard = () => {
                 {calculateDaysInRole()} days
               </p>
             </div>
-            <div className="h-20 w-20 rounded-full border-4 border-blue-100 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-bold">
-              {employeeData?.name?.charAt(0)}{employeeData?.name?.split(' ')[1]?.charAt(0)}
-            </div>
+            <img
+              src={employeeData?.avatar || "https://via.placeholder.com/80x80.png?text=SL"}
+              alt="Profile"
+              className="h-20 w-20 rounded-full border-4 border-blue-100"
+            />
           </div>
         </div>
       </div>
@@ -155,61 +158,24 @@ export const Dashboard = () => {
         />
       </div>
 
+      {/* Skills Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Skills Overview */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 text-center">Skills Overview</h3>
-            <div className="flex justify-center">
-              {skills.length > 0 ? (
-                <SkillsRadarChart skills={skills} />
-              ) : (
-                <p className="text-gray-500 text-center py-8">No skills data available</p>
-              )}
-            </div>
-            <Link
-              to="/profile"
-              className="mt-3 inline-flex items-center text-blue-600 hover:text-blue-800"
-            >
-              View detailed skills
-              <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 text-center mb-4">Skills Overview</h3>
+          <div className="flex justify-center">
+            {skills.length > 0 ? (
+              <SkillsRadarChart skills={skills} />
+            ) : (
+              <p className="text-gray-500 text-center py-8">No skills data available</p>
+            )}
           </div>
-        </div>
-
-        {/* Employee Info */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Employee Information</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Employee ID:</span>
-                <span className="font-medium">{employeeData?.employee_id}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Department:</span>
-                <span className="font-medium">{employeeData?.department}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Unit:</span>
-                <span className="font-medium">{employeeData?.unit}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Line Manager:</span>
-                <span className="font-medium">{employeeData?.line_manager}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Office Location:</span>
-                <span className="font-medium">{employeeData?.office_location}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Hire Date:</span>
-                <span className="font-medium">
-                  {employeeData?.hire_date ? new Date(employeeData.hire_date).toLocaleDateString() : 'N/A'}
-                </span>
-              </div>
-            </div>
-          </div>
+          <Link
+            to="/profile"
+            className="inline-flex items-center text-blue-600 hover:text-blue-800 mt-4"
+          >
+            View detailed skills
+            <ArrowRight className="ml-1 h-4 w-4" />
+          </Link>
         </div>
       </div>
     </div>

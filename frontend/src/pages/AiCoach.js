@@ -16,7 +16,7 @@ export const AiCoach = () => {
   const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
 
-   const API_URL = 'process.env.REACT_APP_API_URL/chat';
+   const API_URL = 'http://localhost:3001/api/chat';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

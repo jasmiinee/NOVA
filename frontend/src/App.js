@@ -1,9 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
-import {Dashboard} from './pages/Dashboard';
-import {CareerPathways} from './pages/CareerPathways';
-import {AiCoach} from './pages/AiCoach';
-import {Leadership} from './pages/Leadership';
+import CareerPathways from './pages/CareerPathways';
+import { AiCoach } from './pages/AiCoach';
+import { Dashboard } from './pages/Dashboard';
+import { Leadership } from './pages/Leadership';
+import './styles/App.css';
 
 import LoginPage from './pages/auth/Login';
 import SignupPage from './pages/auth/SignUp';
