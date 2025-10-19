@@ -59,4 +59,19 @@ router.get('/:employeeId/skills', async (req, res) => {
   }
 });
 
+// GET /api/employees/:employeeId/positions
+router.get('/:employeeId/positions', async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const result = await pool.query(
+      'SELECT * FROM positions_history WHERE employee_id = $1 ORDER BY start_date DESC',
+      [employeeId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching positions:', error);
+    res.status(500).json({ error: 'Failed to fetch positions' });
+  }
+});
+
 export default router;

@@ -4,6 +4,7 @@ import CareerPathways from './pages/CareerPathways';
 import { AiCoach } from './pages/AiCoach';
 import { Dashboard } from './pages/Dashboard';
 import { Leadership } from './pages/Leadership';
+import { Profile } from './pages/Profile';
 import './styles/App.css';
 
 import LoginPage from './pages/auth/Login';
@@ -32,6 +33,7 @@ export default function App() {
             <Route path="/pathways" element={<CareerPathways />} />
             <Route path="/aicoach" element={<AiCoach />} />
             <Route path="/leadership" element={<Leadership />} />
+            <Route path="/profile" element={<Profile />} />
           </Route>
         </Routes>
       </Router>

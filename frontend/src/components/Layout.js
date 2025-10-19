@@ -24,6 +24,7 @@ export const Layout = () => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
+    { name: 'Profile', href: '/profile', icon: User },
     { name: 'Career Pathways', href: '/pathways', icon: TrendingUp },
     { name: 'AI Coach', href: '/aicoach', icon: MessageCircle },
     { name: 'Leadership', href: '/leadership', icon: Star },
