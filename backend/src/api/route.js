@@ -1,3 +1,4 @@
+// file used for initial testing
 import { NextResponse } from "next/server";
 import { testOpenAI } from "../aiClient";
 
