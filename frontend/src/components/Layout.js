@@ -1,6 +1,6 @@
 // src/components/Layout.jsx
-import React, { useState } from 'react';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Home, 
   User, 
@@ -13,14 +13,49 @@ import {
   Menu,
   X,
   Bell,
-  Search
+  Search,
+  LogOut
 } from 'lucide-react';
 import { UserCircleIcon } from '@heroicons/react/24/solid';
+import { useAuth } from '../services/AuthContext';
 import logo from '../assets/transparent_logo.png';
 
 export const Layout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [employeeName, setEmployeeName] = useState(null);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout, token } = useAuth();
+  const dropdownRef = useRef(null);
+
+  // Fetch employee data to get the name
+  useEffect(() => {
+    const fetchEmployeeName = async () => {
+      try {
+        if (!user?.employeeId || !token) return;
+
+        const response = await fetch(
+          `${process.env.REACT_APP_API_URL}/employees/${user.employeeId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setEmployeeName(data.name);
+        }
+      } catch (err) {
+        console.error('Error fetching employee name:', err);
+      }
+    };
+
+    fetchEmployeeName();
+  }, [user, token]);
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -31,6 +66,24 @@ export const Layout = () => {
   ];
 
   const isActive = (href) => location.pathname === href;
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    setDropdownOpen(false);
+    navigate('/login');
+  };
 
   return (
     <div className="h-screen flex overflow-hidden bg-gray-100">
@@ -101,13 +154,33 @@ export const Layout = () => {
               >
                 <Bell className="h-6 w-6" />
               </button>
-              <div className="ml-3 relative">
-                <div className="max-w-xs bg-white flex items-center text-sm rounded-full focus:outline-none">
+              <div className="ml-3 relative" ref={dropdownRef}>
+                <button
+                  type="button"
+                  className="max-w-xs bg-white flex items-center text-sm rounded-full focus:outline-none hover:bg-gray-50 transition-colors"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                >
                   <UserCircleIcon aria-hidden className="h-9 w-9 text-gray-400" />
                   <span className="ml-2 text-gray-700 text-sm font-medium">
-                    Samantha Lee
+                    {employeeName || 'User'}
                   </span>
-                </div>
+                </button>
+
+                {/* Dropdown Menu */}
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50">
+                    <div className="px-4 py-2 text-sm text-gray-700 border-b">
+                      {employeeName || user?.email}
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-colors"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
