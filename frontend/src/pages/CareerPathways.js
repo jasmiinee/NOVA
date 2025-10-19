@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAppData } from "../context/AppDataContext";
 import { apiService } from "../services/api";
 
@@ -7,7 +7,7 @@ function FunctionAreaSelect({ value, options = [], onChange }) {
   const filtered = (query?.trim()
     ? options.filter(o => o.toLowerCase().includes(query.trim().toLowerCase()))
     : options
-  ).slice(0, 50); // keep it snappy
+  ).slice(0, 50);
 
   return (
     <div className="rounded-md border">
@@ -76,6 +76,25 @@ export default function CareerPathways() {
   const [error, setError] = useState("");
   const [result, setResult] = useState(null); // { pathways: [], internal_opportunities: [] }
 
+  useEffect(() => {
+    const id = employee?.employee_id;
+    if (!id) return;
+    (async () => {
+      try {
+        const { data } = await apiService.getLatestPathways(id);
+        // data shape: { id, employee_id, aspiration, result, model_used, generated_at }
+        if (data?.result) setResult(data.result);
+        if (data?.aspiration?.function_area) {
+          setFa(data.aspiration.function_area);
+          setShortTerm(data.aspiration.short_term || "");
+          setLongTerm(data.aspiration.long_term || "");
+        }
+      } catch (e) {
+        // No saved record yet
+      }
+    })();
+  }, [employee?.employee_id]);
+
   async function onGenerate(e) {
     e.preventDefault();
     if (!fa) return;
@@ -90,7 +109,7 @@ export default function CareerPathways() {
           long_term: longTerm || undefined,
         },
       });
-      setResult(data);
+      setResult(data?.result || null);
     } catch (err) {
       setError(err?.response?.data?.error || err.message || "Failed to generate pathways");
       setResult(null);

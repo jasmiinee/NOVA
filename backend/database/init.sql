@@ -135,3 +135,23 @@ CREATE TABLE users (
 
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_employee_id ON users(employee_id);
+
+-- History of career pathway assessments
+CREATE TABLE IF NOT EXISTS employee_pathways (
+  id              BIGSERIAL PRIMARY KEY,
+  employee_id     VARCHAR(20) NOT NULL REFERENCES employees(employee_id) ON DELETE CASCADE,
+  aspiration      JSONB       NOT NULL,  -- { function_area, short_term?, long_term? }
+  result          JSONB       NOT NULL,  -- whatever your /assess returns
+  model_used      TEXT,
+  generated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  aspiration_hash TEXT        NOT NULL  -- dedupe key for "same aspiration"
+);
+
+-- Fast lookups
+CREATE INDEX IF NOT EXISTS idx_ep_employee_time
+  ON employee_pathways(employee_id, generated_at DESC);
+
+-- Ensure one row per (employee, identical aspiration),
+-- so re-running with the same aspiration upserts instead of duplicating:
+CREATE UNIQUE INDEX IF NOT EXISTS uq_ep_employee_aspirationhash
+  ON employee_pathways(employee_id, aspiration_hash);
