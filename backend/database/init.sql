@@ -122,3 +122,16 @@ CREATE INDEX idx_skills_function ON skills(function_area);
 CREATE INDEX idx_competencies_employee ON competencies(employee_id);
 CREATE INDEX idx_projects_employee ON projects(employee_id);
 CREATE INDEX idx_skills_taxonomy_function ON skills_taxonomy(function_area);
+
+-- Indexes for authentication
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  employee_id VARCHAR(20) UNIQUE NOT NULL REFERENCES employees(employee_id),
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_employee_id ON users(employee_id);
