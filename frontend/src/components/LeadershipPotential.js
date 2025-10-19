@@ -8,7 +8,7 @@ export default function LeadershipPotential({ employeeId }) {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`http://localhost:3001/api/leadership/llm/${employeeId}`)
+    fetch(`${process.env.REACT_APP_API_URL}/leadership/llm/${employeeId}`)
       .then(res => res.json())
       .then(setData)
       .catch(console.error)
