@@ -1,13 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Bot, User, Mic, MicOff } from 'lucide-react';
-import { mockData } from '../data/mockData';
 
 export const AiCoach = () => {
-  const [messages, setMessages] = useState(mockData.chatHistory);
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      message: "Hi! I'm PSA's AI Career Coach. I'm here to help you with your career development journey. What would you like to explore today?",
+      sender: 'ai',
+      timestamp: new Date().toISOString()
+    }
+  ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
+
+  const API_URL = 'http://localhost:3001/api/chat';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -28,42 +37,55 @@ export const AiCoach = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const userInput = inputMessage;
     setInputMessage('');
     setIsTyping(true);
+    setError(null);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(inputMessage);
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userInput
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
       const aiMessage = {
         id: messages.length + 2,
-        message: aiResponse,
+        message: data.reply || "I couldn't generate a response. Please try again.",
         sender: 'ai',
         timestamp: new Date().toISOString()
       };
+      
       setMessages(prev => [...prev, aiMessage]);
+    } catch (err) {
+      console.error('Error calling backend:', err);
+      setError('Failed to connect to AI Coach. Make sure your backend is running on localhost:3001');
+      
+      const errorMessage = {
+        id: messages.length + 2,
+        message: "Sorry, I'm having trouble connecting to the server. Please check that your backend is running.",
+        sender: 'ai',
+        timestamp: new Date().toISOString()
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 2000);
-  };
-
-  const generateAIResponse = (userMessage) => {
-    const lowerMessage = userMessage.toLowerCase();
-
-    if (lowerMessage.includes('pathway') || lowerMessage.includes('career')) {
-      return "Based on your current role as Cloud Solutions Architect, I recommend focusing on the Senior Cloud Architect pathway. You're 75% ready and just need to develop leadership skills and multi-cloud strategy expertise. Would you like me to suggest specific courses or mentorship opportunities?";
-    } else if (lowerMessage.includes('skill') || lowerMessage.includes('learn')) {
-      return "Your strongest skills are in Cloud Architecture and DevOps. To advance to senior roles, I'd recommend developing your leadership and business strategy skills. The 'Leadership for Technical Professionals' course would be perfect for you. Shall I help you enroll?";
-    } else if (lowerMessage.includes('mentor')) {
-      return "I've found excellent mentor matches for you! Dr. James Wong (92% match) specializes in Enterprise Architecture, and Sarah Chen (88% match) is an expert in Cloud Security. Both align well with your career pathways. Would you like me to help you connect with either of them?";
-    } else if (lowerMessage.includes('stress') || lowerMessage.includes('wellbeing')) {
-      return "I understand that career growth can sometimes feel overwhelming. PSA offers excellent wellbeing resources including counseling services and stress management workshops. Remember, professional development is a journey, not a race. Would you like me to connect you with our Employee Assistance Program?";
-    } else {
-      return "I'm here to help with your career development at PSA! I can assist with career pathways, skill recommendations, learning opportunities, mentorship matching, and general career guidance. What specific area would you like to explore today?";
     }
   };
 
   const toggleListening = () => {
     setIsListening(!isListening);
-    // In a real app, you would integrate with speech recognition API here
   };
 
   return (
@@ -83,12 +105,21 @@ export const AiCoach = () => {
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              Online
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              error ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+            }`}>
+              {error ? 'Offline' : 'Online'}
             </span>
           </div>
         </div>
       </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-red-50 border-b border-red-200 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div className="bg-gray-50 border-b border-gray-200 p-4">
@@ -161,7 +192,7 @@ export const AiCoach = () => {
           </div>
           <button
             onClick={handleSendMessage}
-            disabled={!inputMessage.trim()}
+            disabled={!inputMessage.trim() || isTyping}
             className="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="h-5 w-5" />
@@ -174,6 +205,88 @@ export const AiCoach = () => {
 
 const MessageBubble = ({ message }) => {
   const isAI = message.sender === 'ai';
+
+  // Helper to render text with bold formatting
+  const renderBoldText = (text) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return (
+          <span key={idx} className="font-bold text-[17px] text-blue-900">
+            {part.slice(2, -2)}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
+  // Parse and format the message
+  const renderFormattedContent = (text) => {
+    // Split by newlines
+    const lines = text.split('\n');
+    const sections = [];
+    let currentSection = [];
+
+    lines.forEach((line) => {
+      // Check if line is a section header (starts with a heading pattern)
+      // Patterns: "Day X:", "# Title", "## Title", "1. Title:", "Section Name:", etc.
+      const isHeader = /^(Day\s+\d+|#{1,6}\s|\d+\.|[A-Z][^:]*:\s*$)/i.test(line.trim());
+      
+      if (isHeader && currentSection.length > 0) {
+        // Save current section and start new one
+        sections.push({
+          header: currentSection[0],
+          content: currentSection.slice(1)
+        });
+        currentSection = [line];
+      } else {
+        currentSection.push(line);
+      }
+    });
+
+    // Don't forget the last section
+    if (currentSection.length > 0) {
+      sections.push({
+        header: currentSection[0],
+        content: currentSection.slice(1)
+      });
+    }
+
+    // Render sections
+    return sections.map((section, idx) => {
+      const headerTrimmed = section.header.trim();
+      const contentLines = section.content
+        .map(l => l.trim())
+        .filter(l => l.length > 0);
+
+      if (!headerTrimmed) return null;
+
+      return (
+        <div key={idx} className="mb-4 pb-3 border-b border-gray-200 last:border-b-0">
+          {/* Section Header */}
+          <h3 className="font-semibold text-sm text-gray-900 mb-2">
+            {renderBoldText(headerTrimmed)}
+          </h3>
+
+          {/* Section Content */}
+          <div className="space-y-2">
+            {contentLines.map((line, i) => {
+              // Remove bullet/dash if present
+              const cleanLine = line.replace(/^[-•]\s*/, '');
+              
+              return (
+                <p key={i} className="text-gray-700 leading-relaxed flex gap-2">
+                  <span className="text-blue-500 flex-shrink-0">•</span>
+                  <span>{renderBoldText(cleanLine)}</span>
+                </p>
+              );
+            })}
+          </div>
+        </div>
+      );
+    });
+  };
 
   return (
     <div className={`flex items-start space-x-2 ${isAI ? '' : 'flex-row-reverse space-x-reverse'}`}>
@@ -188,13 +301,15 @@ const MessageBubble = ({ message }) => {
           )}
         </div>
       </div>
-      <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg chat-message ${
+      <div className={`max-w-xs lg:max-w-2xl px-4 py-3 rounded-lg ${
         isAI 
-          ? 'bg-gray-100 text-gray-900' 
+          ? 'bg-gray-50 text-gray-900 border border-gray-200' 
           : 'bg-blue-600 text-white'
       }`}>
-        <p className="text-sm">{message.message}</p>
-        <p className={`text-xs mt-1 ${isAI ? 'text-gray-500' : 'text-blue-100'}`}>
+        <div className={`text-sm ${isAI ? 'space-y-2' : ''}`}>
+          {isAI ? renderFormattedContent(message.message) : message.message}
+        </div>
+        <p className={`text-xs mt-2 ${isAI ? 'text-gray-500' : 'text-blue-100'}`}>
           {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </p>
       </div>
