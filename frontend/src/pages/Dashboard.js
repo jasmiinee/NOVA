@@ -10,25 +10,91 @@ import {
   ArrowRight,
   Star
 } from 'lucide-react';
+import { useAuth } from '../services/AuthContext';
 import { SkillsRadarChart } from '../components/SkillsRadarChart';
 
 export const Dashboard = () => {
-  const [userProfile, setUserProfile] = useState(null);
+  const { user, token } = useAuth();
+  const [employeeData, setEmployeeData] = useState(null);
+  const [skills, setSkills] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setUserProfile("Samantha");
-      setLoading(false);
-    }, 1000);
-  }, []);
+    const fetchEmployeeData = async () => {
+      try {
+        if (!user?.employeeId || !token) {
+          setError('User not authenticated');
+          setLoading(false);
+          return;
+        }
+
+        // Fetch employee profile
+        const empResponse = await fetch(
+          `process.env.REACT_APP_API_URL/employees/${user.employeeId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (!empResponse.ok) throw new Error('Failed to fetch employee data');
+        const empData = await empResponse.json();
+        setEmployeeData(empData);
+
+        // Fetch skills
+        const skillsResponse = await fetch(
+          `process.env.REACT_APP_API_URL/employees/${user.employeeId}/skills`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (skillsResponse.ok) {
+          const skillsData = await skillsResponse.json();
+          // Transform skills for radar chart (take top 6)
+          const formattedSkills = skillsData.slice(0, 6).map((skill, idx) => ({
+            skill: skill.skill_name,
+            level: Math.floor(Math.random() * 3) + 3 // Random level 3-5 for now
+          }));
+          setSkills(formattedSkills);
+        }
+
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    fetchEmployeeData();
+  }, [user, token]);
 
   if (loading) {
     return <LoadingSpinner />;
   }
 
-// TODO: Replace mockData with actual API data when backend is ready, {userProfile?.jobTitle}, {userProfile?.department}, all the skills
+  if (error) {
+    return (
+      <div className="bg-red-50 p-6 rounded-lg text-red-700">
+        <p>Error loading dashboard: {error}</p>
+      </div>
+    );
+  }
+
+  const calculateDaysInRole = () => {
+    if (!employeeData?.in_role_since) return 'N/A';
+    const startDate = new Date(employeeData.in_role_since);
+    const today = new Date();
+    const daysInRole = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+    return daysInRole;
+  };
 
   return (
     <div className="space-y-6">
@@ -37,24 +103,22 @@ export const Dashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Welcome back, Samantha
+              Welcome back, {employeeData?.name || user?.email}
             </h1>
             <p className="text-gray-600 mt-1">
-               Cloud Solutions Architect • IT Infrastructure 
+              {employeeData?.job_title} • {employeeData?.department}
             </p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-right">
               <p className="text-sm text-gray-500">Days in current role</p>
-              <p className="text-2xl font-bold text-blue-600"> 24 days
-                {/*Math.floor((new Date() - new Date(userProfile?.inRoleSince)) / (1000 * 60 * 60 * 24))*/}
+              <p className="text-2xl font-bold text-blue-600">
+                {calculateDaysInRole()} days
               </p>
             </div>
-            <img
-              src={userProfile?.avatar || "https://via.placeholder.com/80x80.png?text=SL"}
-              alt="Profile"
-              className="h-20 w-20 rounded-full border-4 border-blue-100"
-            />
+            <div className="h-20 w-20 rounded-full border-4 border-blue-100 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-2xl font-bold">
+              {employeeData?.name?.charAt(0)}{employeeData?.name?.split(' ')[1]?.charAt(0)}
+            </div>
           </div>
         </div>
       </div>
@@ -70,7 +134,7 @@ export const Dashboard = () => {
         />
         <StatCard
           title="Skills Developed"
-          value="12"
+          value={skills.length || '12'}
           icon={Award}
           color="green"
           trend="3 new this quarter"
@@ -97,14 +161,11 @@ export const Dashboard = () => {
           <div className="bg-white rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold text-gray-900 text-center">Skills Overview</h3>
             <div className="flex justify-center">
-            <SkillsRadarChart skills={[
-      { skill: "Cloud Architecture", level: 5 },
-      { skill: "Cloud DevOps & Automation", level: 4 },
-      { skill: "Securing Cloud Infrastructure", level: 3 },
-      { skill: "Network Architecture", level: 2 },
-      { skill: "Middleware & Web Servers", level: 3 },
-      { skill: "Enterprise Architecture", level: 4 },
-    ]}/>
+              {skills.length > 0 ? (
+                <SkillsRadarChart skills={skills} />
+              ) : (
+                <p className="text-gray-500 text-center py-8">No skills data available</p>
+              )}
             </div>
             <Link
               to="/profile"
@@ -115,9 +176,43 @@ export const Dashboard = () => {
             </Link>
           </div>
         </div>
-      </div>
 
+        {/* Employee Info */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Employee Information</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Employee ID:</span>
+                <span className="font-medium">{employeeData?.employee_id}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Department:</span>
+                <span className="font-medium">{employeeData?.department}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Unit:</span>
+                <span className="font-medium">{employeeData?.unit}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Line Manager:</span>
+                <span className="font-medium">{employeeData?.line_manager}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Office Location:</span>
+                <span className="font-medium">{employeeData?.office_location}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Hire Date:</span>
+                <span className="font-medium">
+                  {employeeData?.hire_date ? new Date(employeeData.hire_date).toLocaleDateString() : 'N/A'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+    </div>
   );
 };
 

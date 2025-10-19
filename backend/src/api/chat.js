@@ -2,6 +2,7 @@
 import express from "express";
 import { chatWithAI } from "../aiClient.js";
 import { pool } from "../../db.js";
+import { authenticateToken } from "./auth.js";
 
 const router = express.Router();
 
@@ -85,9 +86,10 @@ async function getUserContext(employeeId) {
       }
 
       // send everything to the ai chatbot
-      router.post("/", async (req, res) => {
+      router.post("/", authenticateToken, async (req, res) => {
         try {
-          const { message, employeeId } = req.body;
+          const { message } = req.body;
+          const employeeId = req.employeeId; // From JWT token
           
           const userContext = await getUserContext(employeeId);
 
