@@ -1,11 +1,12 @@
 // src/context/AppDataContext.js
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
+import { useAuth } from "../services/AuthContext";
 import { apiService } from "../services/api";
 
 const AppDataContext = createContext(null);
-const DEFAULT_EMPLOYEE_ID = "EMP-20001"; // Samantha Lee
 
 export function AppDataProvider({ children }) {
+  const { user } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
   const [employee, setEmployee] = useState(null);
@@ -15,6 +16,18 @@ export function AppDataProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState(null);
 
+  useEffect(() => {
+   const id = user?.employeeId;
+   if (id) {
+     setSelectedEmployeeId(id);
+   } else {
+     setSelectedEmployeeId(null);
+     setEmployee(null);
+     setEmployeeSkills([]);
+   }
+  }, [user]); 
+
+
   // Fetch employees list
   const fetchEmployees = useCallback(async () => {
     try {
@@ -22,30 +35,26 @@ export function AppDataProvider({ children }) {
       const res = await apiService.listEmployees();
       const rows = Array.isArray(res) ? res : res.data || [];
       setEmployees(rows);
-      // prefer Samantha (EMP-20001). If not found, keep current or first.
-      if (!selectedEmployeeId && rows?.length) {
-        const preferred =
-          rows.find(r => r.employee_id === DEFAULT_EMPLOYEE_ID) ||
-          rows[0];
-        if (preferred) setSelectedEmployeeId(preferred.employee_id);
-      }
     } catch (e) {
       console.error(e);
       setErrors((prev) => ({ ...prev, employees: e.message }));
     }
-  }, [selectedEmployeeId]);
+  }, []);
 
   // Fetch selected employee detail & skills
   const fetchEmployeeDetail = useCallback(async (employeeId) => {
     if (!employeeId) return;
+    console.log('Fetching employee:', employeeId);
     try {
       setErrors(null);
       const [profileRes, skillsRes] = await Promise.all([
         apiService.getEmployee(employeeId),
         apiService.getEmployeeSkills(employeeId),
       ]);
-      const profile = profileRes?.data ?? profileRes ?? null;
-      const skills = Array.isArray(skillsRes) ? skillsRes : skillsRes?.data || [];
+      const profile = profileRes?.data ?? null;
+      const rawSkills = skillsRes?.data ?? skillsRes;
+      const skills = Array.isArray(rawSkills) ? rawSkills : [];
+      console.log('Fetched skills for', employeeId, ':', skills);
       setEmployee(profile);
       setEmployeeSkills(skills);
     } catch (e) {
