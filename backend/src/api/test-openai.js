@@ -1,3 +1,4 @@
+// file used for initial testing
 import express from "express";
 import { testOpenAI } from "../aiClient.js";
 
