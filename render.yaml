@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: nova-api
+    env: node
+    rootDirectory: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: NODE_ENV
+        value: production
