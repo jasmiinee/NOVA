@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await fetch('process.env.REACT_APP_API_URL/auth/login', {
+      const response = await fetch('http://localhost:3001/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
 
   const signup = async (email, password, employeeId) => {
     try {
-      const response = await fetch('process.env.REACT_APP_API_URL/api/auth/signup', {
+      const response = await fetch('http://localhost:3001/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, employeeId })
