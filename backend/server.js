@@ -10,6 +10,7 @@ import taxonomyRouter from './routes/taxonomy.js';
 import pathwaysRouter from './routes/pathways.js';
 import leadershipRouter from './routes/leadership.js';
 import authRouter from './src/api/auth.js';
+import mentorRoutes from './routes/mentors.js';
 
 const app = express();
 app.use(helmet());
@@ -43,3 +44,5 @@ app.use('/api/leadership', leadershipRouter);
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => console.log(`API listening on http://localhost:${port}`));
+
+app.use('/api', mentorRoutes);

@@ -63,6 +63,7 @@ export const Layout = () => {
     { name: 'Career Pathways', href: '/pathways', icon: TrendingUp },
     { name: 'AI Coach', href: '/aicoach', icon: MessageCircle },
     { name: 'Leadership', href: '/leadership', icon: Star },
+    { name: 'Mentorship', href: '/mentorship', icon: Users },
   ];
 
   const isActive = (href) => location.pathname === href;
