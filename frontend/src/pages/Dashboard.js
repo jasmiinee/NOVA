@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { UserCircleIcon } from '@heroicons/react/24/solid';
+
 import { 
   TrendingUp, 
   BookOpen, 
@@ -117,11 +119,7 @@ export const Dashboard = () => {
                 {calculateDaysInRole()} days
               </p>
             </div>
-            <img
-              src={employeeData?.avatar || "https://via.placeholder.com/80x80.png?text=SL"}
-              alt="Profile"
-              className="h-20 w-20 rounded-full border-4 border-blue-100"
-            />
+            <UserCircleIcon aria-hidden className="h-20 w-20 text-gray-400" />
           </div>
         </div>
       </div>
@@ -177,6 +175,29 @@ export const Dashboard = () => {
             <ArrowRight className="ml-1 h-4 w-4" />
           </Link>
         </div>
+
+         {/* AI Coach Quick Access */}
+        <div className="bg-white rounded-lg shadow p-6 shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-center">AI Career Coach</h2>
+            <div className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
+              <span className="mr-1">AI</span>
+              <MessageSquare size={14} />
+            </div>
+          </div>
+          <div className="rounded-xl bg-emerald-50 ring-1 ring-emerald-100 p-5 mb-5">
+            <p className="text-emerald-900/90 italic leading-7">
+              “{'Based on your progress, I recommend focusing on leadership skills for your next career move.'}”
+            </p>
+          </div>
+          <Link
+            to="/aicoach"
+            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 transition"
+          >
+            Chat with Coach
+          </Link>
+          </div>
+
       </div>
     </div>
   );
