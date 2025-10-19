@@ -1,275 +1,312 @@
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, Clock, Target, CheckCircle, AlertCircle } from 'lucide-react';
-import { mockData } from '../data/mockData';
+import React, { useState } from "react";
+import { useAppData } from "../context/AppDataContext";
+import { apiService } from "../services/api";
 
-export const CareerPathways = () => {
-    const [pathways, setPathways] = useState([]);
-    const [selectedPathway, setSelectedPathway] = useState(null);
-    const [loading, setLoading] = useState(true);
+function FunctionAreaSelect({ value, options = [], onChange }) {
+  const [query, setQuery] = useState('');
+  const filtered = (query?.trim()
+    ? options.filter(o => o.toLowerCase().includes(query.trim().toLowerCase()))
+    : options
+  ).slice(0, 50); // keep it snappy
 
-    useEffect(() => {
-        // Simulate API call
-        setTimeout(() => {
-            setPathways(mockData.careerPathways);
-            setSelectedPathway(mockData.careerPathways[0]);
-            setLoading(false);
-        }, 1000);
-    }, []);
+  return (
+    <div className="rounded-md border">
+      <div className="flex items-center px-2 border-b">
+        <svg className="h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none">
+          <path d="M21 21l-4.2-4.2M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search function areas…"
+          className="w-full px-2 py-2 text-sm focus:outline-none"
+        />
+        {value && (
+          <button
+            type="button"
+            onClick={() => onChange('')}
+            className="text-xs text-gray-500 hover:text-gray-700"
+          >
+            Clear
+          </button>
+        )}
+      </div>
 
-    if (loading) {
-        return <div className='flex justify-center items-center h-64'>
-            <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600'></div>
-        </div>;
+      <div className="max-h-56 overflow-auto">
+        {!filtered.length ? (
+          <div className="px-3 py-2 text-sm text-gray-500">No matches</div>
+        ) : (
+          filtered.map((opt) => {
+            const active = value === opt;
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => onChange(opt)}
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 ${
+                  active ? 'bg-blue-50 text-blue-700' : 'text-gray-800'
+                }`}
+              >
+                {opt}
+              </button>
+            );
+          })
+        )}
+      </div>
+
+      {value && (
+        <div className="border-t px-3 py-2 bg-gray-50 text-xs text-gray-600">
+          Selected: <span className="font-medium text-gray-900">{value}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function CareerPathways() {
+  const { employee, employeeSkillNames = [], functionAreas = [], loading } = useAppData();
+
+  // aspirations quiz
+  const [fa, setFa] = useState("");
+  const [shortTerm, setShortTerm] = useState("");
+  const [longTerm, setLongTerm] = useState("");
+
+  // results
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState(null); // { pathways: [], internal_opportunities: [] }
+
+  async function onGenerate(e) {
+    e.preventDefault();
+    if (!fa) return;
+    setBusy(true);
+    setError("");
+    try {
+      const { data } = await apiService.assessPathways({
+        employeeId: employee?.employee_id, // Samantha is auto-selected in context
+        aspiration: {
+          function_area: fa,
+          short_term: shortTerm || undefined,
+          long_term: longTerm || undefined,
+        },
+      });
+      setResult(data);
+    } catch (err) {
+      setError(err?.response?.data?.error || err.message || "Failed to generate pathways");
+      setResult(null);
+    } finally {
+      setBusy(false);
     }
+  }
 
+  if (loading) {
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="big-white rounded-lg shadow p-6">
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">Career Pathways</h1>
-                <p className="text-gray-600">
-                    Explore various personalized career pathways based on your current skills and aspirations.
-                </p>
-            </div>
-
-            <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
-                {/* Pathway Cards */}
-                <div className='lg:col-span-1 space-y-4'>
-                    {pathways.map((pathway, index) => (
-                        <PathwayCard
-                            key={index}
-                            pathway={pathway}
-                            isSelected={selectedPathway?.title === pathway.title}
-                            onClick={() => setSelectedPathway(pathway)}
-                        />
-                    ))}
-                </div>
-
-                {/* Pathway Details */}
-                <div className='lg:col-span-2'>
-                    {selectedPathway && (
-                        <PathwayDetails pathway={selectedPathway} />
-                    )}
-                </div>
-            </div>
-
-            {/* Current Role Skills */}
-            <div className="big-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Current Skills</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {mockData.skills.map((skill, index) => (
-                        <div key={index} className="border rounded-lg p-4">
-                            <div className="flex justify-between items-center mb-2">
-                                <h4 className="text-sm font-medium text-gray-900">{skill.skill}</h4>
-                                <div className="flex items-center">
-                                    {[...Array(5)].map((_, i) => (
-                                        <div
-                                            key={i}
-                                            className={`h-2 w-2 rounded-full mr-1 ${
-                                                i < skill.level ? 'bg-green-500' : 'bg-gray-200'}
-                                            }`}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                            <p className="text-xs text-gray-500">Level {skill.level}/5</p>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+      </div>
     );
-};
+  }
 
-const PathwayCard = ({ pathway, isSelected, onClick }) => {
-    const getReadinessColor = (readiness) => {
-        if (readiness >= 70) return 'text-green-600 bg-green-100';
-        if (readiness >= 50) return 'text-yellow-600 bg-yellow-100';
-        return 'text-red-600 bg-red-100';
-    };
+  return (
+    <div className="space-y-6">
+      <header className="bg-white rounded-lg shadow p-6">
+        <h1 className="text-2xl font-bold text-gray-900">Career Pathways</h1>
+        <p className="text-gray-600">Find the perfect career pathway for you.</p>
+      </header>
 
-    return (
-        <div
-            className={`cursor-pointer big-white rounded-lg shadow p-4 transition-all duration-200 ${
-                isSelected ? 'ring-2 ring-blue-500 border-blue-500' : 'hover:shadow-md'
-            }`}
-            onClick={onClick}
-        >
-            <div className="flex justify-between items-center mb-3">
-                <h3 className="text-lg font-semibold text-gray-900">{pathway.title}</h3>
-                <TrendingUp className="h-5 w-5 text-blue-500" />
+      {/* Aspirations quiz */}
+      <form onSubmit={onGenerate} className="bg-white rounded-lg shadow overflow-hidden">
+        {/* Card header */}
+        <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Career Aspiration</h2>
+            <p className="text-sm text-gray-500">Pick a function area and share your goals. We’ll tailor a pathway from your current skills.</p>
+          </div>
+          {busy && (
+            <div className="flex items-center text-sm text-blue-600">
+              <span className="h-2 w-2 rounded-full bg-blue-600 mr-2 animate-pulse" />
+                Generating…
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Function Area selector (searchable) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-900 mb-1">Function Area <span className="text-red-500">*</span></label>
+            <FunctionAreaSelect
+              value={fa}
+              options={functionAreas}
+              onChange={setFa}
+            />
+          </div>
+
+          {/* Goals */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1">
+                Short-term goals (1–2 years)
+              </label>
+              <div className="relative">
+                <textarea
+                  className="mt-1 block w-full border rounded-md px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={3}
+                  value={shortTerm}
+                  maxLength={280}
+                  onChange={(e) => setShortTerm(e.target.value)}
+                  placeholder="e.g., Lead analytics initiatives across operations"
+                />
+                <span className="absolute bottom-2 right-3 text-[10px] text-gray-400">{shortTerm.length}/280</span>
+              </div>
             </div>
 
-            <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Readiness</span>
-                    <span className={`text-sm font-semibold px-2 py-1 rounded-full ${getReadinessColor(pathway.readiness)}`}>
-                        {pathway.readiness}%
-                    </span>
-                </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1">
+                Long-term goals (3–5 years)
+              </label>
+              <div className="relative">
+                <textarea
+                  className="mt-1 block w-full border rounded-md px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  rows={3}
+                  value={longTerm}
+                  maxLength={280}
+                  onChange={(e) => setLongTerm(e.target.value)}
+                  placeholder="e.g., Drive enterprise-wide data strategy and governance"
+                />
+                <span className="absolute bottom-2 right-3 text-[10px] text-gray-400">{longTerm.length}/280</span>
+              </div>
+            </div>
+          </div>
 
-                <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Time to Goal</span>
-                    <span className="text-sm font-medium text-gray-900">{pathway.timeEstimate}</span>
-                </div>
+          {/* Error (if any) */}
+          {error && (
+            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
-                <div>
-                    <p className="text-sm text-gray-600 mb-1">Skills to Develop</p>
-                    <div className="flex flex-wrap gap-1">
-                        {pathway.skillGaps.slice(0, 2).map((skill, index) => (
-                            <span key={index} className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
-                                {skill}
-                            </span>
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => { setFa(''); setShortTerm(''); setLongTerm(''); setError(''); }}
+              className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              Reset
+            </button>
+            <button
+              type="submit"
+              disabled={!fa || busy}
+              className={`px-4 py-2 rounded-md text-white transition-colors ${
+                !fa || busy ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+              }`}
+            >
+              {busy ? 'Generating…' : 'Save'}
+            </button>
+          </div>
+        </div>
+      </form>
+
+
+      {/* Results */}
+      {result && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Pathways list */}
+          <div className="lg:col-span-2 space-y-4">
+            {result.pathways?.map((p, idx) => (
+              <div key={idx} className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-xl font-semibold text-gray-900">{p.title}</h3>
+                    <div className="mt-3">
+                      <h4 className="font-medium text-gray-900 mb-1">Required Skills</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {(p.required_skills || p.requiredSkills || []).map((s, i) => (
+                          <span key={i} className="px-2 py-1 text-xs rounded-full bg-emerald-50 text-emerald-900 ring-1 ring-emerald-200">
+                            {s}
+                          </span>
                         ))}
-                        {pathway.skillGaps.length > 2 && (
-                            <span className="text-xs bg-gray-500">+{pathway.skillGaps.length - 2} more</span>
-                        )}
+                      </div>
                     </div>
+
+                    {(p.gaps || p.skill_gaps)?.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="font-medium text-gray-900 mb-1">Skill Gaps</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {(p.gaps || p.skill_gaps).map((g, i) => (
+                            <span key={i} className="px-2 py-1 text-xs rounded-full bg-rose-50 text-rose-900 ring-1 ring-rose-200">
+                              {g}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-blue-600">{p.readiness ?? 0}%</div>
+                    <div className="text-sm text-gray-500">{p.time_estimate || p.timeEstimate || "—"}</div>
+                  </div>
                 </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Internal opportunities */}
+          <aside className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">Internal Opportunities</h3>
+              {!result.internal_opportunities?.length ? (
+                <p className="text-sm text-gray-500">No matching roles found yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {result.internal_opportunities.map((o, i) => (
+                    <div key={i} className="rounded-lg p-4 bg-amber-50 border border-amber-200">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="text-sm font-semibold text-gray-900">{o.title}</div>
+                          <div className="text-xs text-gray-600">{o.unit} • {o.location} • {o.posted_at || "Recently"}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-emerald-700">{o.match ?? 0}%</div>
+                          <div className="text-[10px] text-gray-500">Match</div>
+                        </div>
+                      </div>
+                      {!!(o.tags || []).length && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {o.tags.map((t, j) => (
+                            <span key={j} className="px-2 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-900">
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+          </aside>
         </div>
-    );
-};
+      )}
 
-const PathwayDetails = ({ pathway }) => {
-    return (
-        <div className="bg-white rounded-lg shadow">
-            {/* Header */}
-            <div className="border-b border-gray-200 p-6">
-                <div className="flex justify-between items-center">
-                    <div>
-                        <h2 className="text-2xl font-bold text-gray-900">{pathway.title}</h2>
-                        <p className="text-gray-600 mt-1">Detailed pathway analysis and recommendations</p>
-                    </div>
-                    <div className="text-right">
-                        <div className="text-3xl font-bold text-blue-600">{pathway.readiness}%</div>
-                        <div className="text-sm text-gray-500">Ready</div>
-                    </div>
+      {/* Current skills */}
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Current Skills</h3>
+        {!employeeSkillNames.length ? (
+          <p className="text-sm text-gray-500">No skills found.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {employeeSkillNames.map((s, i) => (
+              <div key={i} className="border rounded-lg p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h4 className="text-sm font-medium text-gray-900">{s}</h4>
                 </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 space-y-6">
-                {/* Timeline */}
-                <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Clock className="h-5 w-5 text-blue-500 mr-2" />
-                        Estimated Timeline: {pathway.timeEstimate}
-                    </h3>
-                    <div className="bg-gray-100 rounded-full h-2 mb-4">
-                        <div
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                            style={{ width: `${pathway.readiness}%` }}
-                        ></div>
-                    </div>
-                </div>
-
-                {/* Required Skills */}
-                <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Target className="h-5 w-5 text-green-500 mr-2" />
-                        Required Skills
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {pathway.requiredSkills.map((skill, index) => {
-                            const hasSkill = !pathway.skillGaps.includes(skill);
-                            return (
-                                <div key={index} className="flex items-center">
-                                    {hasSkill ? (
-                                        <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-                                    ) : (
-                                        <AlertCircle className="h-5 w-5 text-red-500 mr-3" />
-                                    )}
-                                    <span className={hasSkill ? 'text-gray-900' : 'text-red-600'}>
-                                        {skill}
-                                    </span>
-                                    {hasSkill && (
-                                        <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                                            Acquired
-                                        </span>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* Skill Gaps */}
-                {pathway.skillGaps.length > 0 && (
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                            <AlertCircle className="h-5 w-5 mr-2 text-red-500" />
-                            Skills to Develop
-                        </h3>
-                        <div className="space-y-3">
-                            {pathway.skillGaps.map((skill, index) => {
-                                const recommendation = mockData.learningRecommendations.find(
-                                    rec => rec.title.toLowerCase().includes(skill.toLowerCase().split(' ')[0])
-                                );
-                                return (
-                                    <div key={index} className="border border-red-200 rounded-lg p-4 bg-red-50">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h4 className="font-medium text-red-900">{skill}</h4>
-                                                {recommendation && (
-                                                    <p className="text-sm text-red-700 mt-1">
-                                                        Recommended: {recommendation.title} ({recommendation.duration})
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <button className="text-sm bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 transition-colors">
-                                                Start Learning
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
-                {/* Action Plan */}
-                <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Recommended Action Plan</h3>
-                    <div className="space-y-4">
-                        <div className="border-l-4 border-blue-500 pl-4">
-                            <h4 className="font-medium text-gray-900">Phase 1 (Next 3 months)</h4>
-                            <ul className="text-sm text-gray-600 mt-1 space-y-1">
-                                <li>• Complete foundational courses in identified skill gaps</li>
-                                <li>• Find a mentor in the target role area</li>
-                                <li>• Start working on stretch projects</li>
-                            </ul>
-                        </div>
-                        <div className="border-l-4 border-green-500 pl-4">
-                            <h4 className="font-medium text-gray-900">Phase 2 (3-6 months)</h4>
-                            <ul className="text-sm text-gray-600 mt-1 space-y-1">
-                                <li>• Apply learning in real projects</li>
-                                <li>• Seek leadership opportunities</li>
-                                <li>• Build network in target role area</li>
-                            </ul>
-                        </div>
-                        <div className="border-l-4 border-purple-500 pl-4">
-                            <h4 className="font-medium text-gray-900">Phase 3 (6+ months)</h4>
-                            <ul className="text-sm text-gray-600 mt-1 space-y-1">
-                                <li>• Apply for target role positions</li>
-                                <li>• Complete advanced certifications</li>
-                                <li>• Demonstrate readiness through performance</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                {/* CTA */}
-                <div className="bg-blue-50 rounded-lg p-4 flex justify-between items-center">
-                    <div>
-                        <h4 className="font-medium text-blue-900">Ready to start this pathway?</h4>
-                        <p className="text-sm text-blue-700">Get personalized learning recommendations and mentorship matches.</p>
-                    </div>
-                    <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                        Create Development Plan
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,6 +1,6 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
-import { CareerPathways } from './pages/CareerPathways';
+import CareerPathways from './pages/CareerPathways';
 import { AiCoach } from './pages/AiCoach';
 import './styles/App.css';
 import { Dashboard } from './pages/Dashboard';
