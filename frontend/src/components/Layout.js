@@ -14,6 +14,8 @@ import {
   Bell,
   Search
 } from 'lucide-react';
+import { UserCircleIcon } from '@heroicons/react/24/solid';
+import logo from '../assets/transparent_logo.png';
 
 export const Layout = ({ children }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -91,11 +93,7 @@ export const Layout = ({ children }) => {
                             </button>
                             <div className="ml-3 relative">
                                 <div className="max-w-xs bg-white flex items-center text-sm rounded-full focus:outline-none">
-                                    <img
-                                        className="h-8 w-8 rounded-full"
-                                        src="https://via.placeholder.com/32"
-                                        alt="User avatar"
-                                    />
+                                    <UserCircleIcon aria-hidden className="h-9 w-9 text-gray-400" />
                                     <span className="ml-2 text-gray-700 text-sm font-medium">
                                         {'Samantha Lee'}
                                     </span>
@@ -121,8 +119,8 @@ const SidebarContent = ({ navigation, isActive }) => (
     <>
         <div className="flex items-center flex-shrink-0 px-4">
             <img
-                className="h-8 w-auto"
-                src="https://via.placeholder.com/100x32.png?text=NOVA"
+                className="h-12 pb-1 w-auto"
+                src={logo}
                 alt="NOVA"
             />
             <span className="ml-2 font-semibold text-xl text-gray-900">NOVA</span>
