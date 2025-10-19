@@ -6,6 +6,7 @@ import chatRoute from "./src/api/chat.js";
 import testOpenAIRoute from "./src/api/test-openai.js";
 import employeesRouter from './routes/employees.js';
 import skillsRouter from './routes/skills.js';
+import taxonomyRouter from './routes/taxonomy.js';
 import pathwaysRouter from './routes/pathways.js';
 
 const app = express();
@@ -31,6 +32,7 @@ app.get('/api/health', (_req, res) => res.json({ ok: true, ts: new Date().toISOS
 
 app.use('/api/employees', employeesRouter);
 app.use('/api/skills', skillsRouter);
+app.use('/api/taxonomy', taxonomyRouter);
 
 app.use('/api/pathways', pathwaysRouter);
 
