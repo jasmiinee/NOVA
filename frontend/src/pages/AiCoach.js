@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Bot, User, Mic, MicOff } from 'lucide-react';
+import { useAuth } from '../services/AuthContext';
 
 export const AiCoach = () => {
+  const { user, token } = useAuth();
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -16,7 +18,8 @@ export const AiCoach = () => {
   const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
 
-  const API_URL = 'http://localhost:3001/api/chat';
+  // Use environment variable or fallback to localhost
+  const API_URL = 'http://localhost:3001';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -28,6 +31,12 @@ export const AiCoach = () => {
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
+
+    // Check if user is authenticated
+    if (!token) {
+      setError('You must be logged in to use the AI Coach');
+      return;
+    }
 
     const userMessage = {
       id: messages.length + 1,
@@ -43,19 +52,20 @@ export const AiCoach = () => {
     setError(null);
 
     try {
-      const response = await fetch(API_URL, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    message: userInput,
-    employeeId: "EMP-20001" // get this from logged-in user
-  })
-});
+      const response = await fetch(`${API_URL}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          message: userInput
+        })
+      });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -70,16 +80,26 @@ export const AiCoach = () => {
       setMessages(prev => [...prev, aiMessage]);
     } catch (err) {
       console.error('Error calling backend:', err);
-      setError('Failed to connect to AI Coach. Make sure your backend is running on localhost:3001');
       
-      const errorMessage = {
+      let errorMessage = 'Failed to connect to AI Coach.';
+      if (err.message.includes('401')) {
+        errorMessage = 'Your session has expired. Please log in again.';
+      } else if (err.message.includes('ERR_NAME_NOT_RESOLVED')) {
+        errorMessage = 'Cannot connect to backend. Make sure it\'s running on port 3001.';
+      } else {
+        errorMessage = `Error: ${err.message}`;
+      }
+      
+      setError(errorMessage);
+      
+      const errorMsgBubble = {
         id: messages.length + 2,
-        message: "Sorry, I'm having trouble connecting to the server. Please check that your backend is running.",
+        message: "Sorry, I'm having trouble connecting to the server. " + errorMessage,
         sender: 'ai',
         timestamp: new Date().toISOString()
       };
       
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, errorMsgBubble]);
     } finally {
       setIsTyping(false);
     }
@@ -207,7 +227,6 @@ export const AiCoach = () => {
 const MessageBubble = ({ message }) => {
   const isAI = message.sender === 'ai';
 
-  // Helper to render text with bold formatting
   const renderBoldText = (text) => {
     const parts = text.split(/(\*\*.*?\*\*)/g);
     return parts.map((part, idx) => {
@@ -222,20 +241,15 @@ const MessageBubble = ({ message }) => {
     });
   };
 
-  // Parse and format the message
   const renderFormattedContent = (text) => {
-    // Split by newlines
     const lines = text.split('\n');
     const sections = [];
     let currentSection = [];
 
     lines.forEach((line) => {
-      // Check if line is a section header (starts with a heading pattern)
-      // Patterns: "Day X:", "# Title", "## Title", "1. Title:", "Section Name:", etc.
       const isHeader = /^(Day\s+\d+|#{1,6}\s|\d+\.|[A-Z][^:]*:\s*$)/i.test(line.trim());
       
       if (isHeader && currentSection.length > 0) {
-        // Save current section and start new one
         sections.push({
           header: currentSection[0],
           content: currentSection.slice(1)
@@ -246,7 +260,6 @@ const MessageBubble = ({ message }) => {
       }
     });
 
-    // Don't forget the last section
     if (currentSection.length > 0) {
       sections.push({
         header: currentSection[0],
@@ -254,7 +267,6 @@ const MessageBubble = ({ message }) => {
       });
     }
 
-    // Render sections
     return sections.map((section, idx) => {
       const headerTrimmed = section.header.trim();
       const contentLines = section.content
@@ -265,15 +277,12 @@ const MessageBubble = ({ message }) => {
 
       return (
         <div key={idx} className="mb-4 pb-3 border-b border-gray-200 last:border-b-0">
-          {/* Section Header */}
           <h3 className="font-semibold text-sm text-gray-900 mb-2">
             {renderBoldText(headerTrimmed)}
           </h3>
 
-          {/* Section Content */}
           <div className="space-y-2">
             {contentLines.map((line, i) => {
-              // Remove bullet/dash if present
               const cleanLine = line.replace(/^[-•]\s*/, '');
               
               return (

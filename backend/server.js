@@ -9,11 +9,13 @@ import skillsRouter from './routes/skills.js';
 import taxonomyRouter from './routes/taxonomy.js';
 import pathwaysRouter from './routes/pathways.js';
 import leadershipRouter from './routes/leadership.js';
+import authRouter from './src/api/auth.js';
 
 const app = express();
 app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
+app.use("/api/auth", authRouter);
 
 app.get("/", (_req, res) => {
   res.send(`<h1>PSA Backend</h1>

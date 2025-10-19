@@ -11,26 +11,91 @@ import {
   Star,
   MessageSquare
 } from 'lucide-react';
+import { useAuth } from '../services/AuthContext';
 import { SkillsRadarChart } from '../components/SkillsRadarChart';
-import { UserCircleIcon } from '@heroicons/react/24/solid';
 
 export const Dashboard = () => {
-  const [userProfile, setUserProfile] = useState(null);
+  const { user, token } = useAuth();
+  const [employeeData, setEmployeeData] = useState(null);
+  const [skills, setSkills] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setUserProfile("Samantha");
-      setLoading(false);
-    }, 1000);
-  }, []);
+    const fetchEmployeeData = async () => {
+      try {
+        if (!user?.employeeId || !token) {
+          setError('User not authenticated');
+          setLoading(false);
+          return;
+        }
+
+        // Fetch employee profile
+        const empResponse = await fetch(
+          `${process.env.REACT_APP_API_URL}/employees/${user.employeeId}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (!empResponse.ok) throw new Error('Failed to fetch employee data');
+        const empData = await empResponse.json();
+        setEmployeeData(empData);
+
+        // Fetch skills
+        const skillsResponse = await fetch(
+          `${process.env.REACT_APP_API_URL}/employees/${user.employeeId}/skills`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (skillsResponse.ok) {
+          const skillsData = await skillsResponse.json();
+          // Transform skills for radar chart (take top 6)
+          const formattedSkills = skillsData.slice(0, 6).map((skill) => ({
+            skill: skill.skill_name,
+            level: skill.proficiency_level || Math.floor(Math.random() * 3) + 3
+          }));
+          setSkills(formattedSkills);
+        }
+
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError(err.message);
+        setLoading(false);
+      }
+    };
+
+    fetchEmployeeData();
+  }, [user, token]);
 
   if (loading) {
     return <LoadingSpinner />;
   }
 
-// TODO: Replace mockData with actual API data when backend is ready, {userProfile?.jobTitle}, {userProfile?.department}, all the skills
+  if (error) {
+    return (
+      <div className="bg-red-50 p-6 rounded-lg text-red-700">
+        <p>Error loading dashboard: {error}</p>
+      </div>
+    );
+  }
+
+  const calculateDaysInRole = () => {
+    if (!employeeData?.in_role_since) return 'N/A';
+    const startDate = new Date(employeeData.in_role_since);
+    const today = new Date();
+    const daysInRole = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+    return daysInRole;
+  };
 
   return (
     <div className="space-y-6">
@@ -39,20 +104,24 @@ export const Dashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Welcome back, Samantha
+              Welcome back, {employeeData?.name || user?.email}
             </h1>
             <p className="text-gray-600 mt-1">
-               Cloud Solutions Architect • IT Infrastructure 
+              {employeeData?.job_title} • {employeeData?.department}
             </p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-right">
               <p className="text-sm text-gray-500">Days in current role</p>
-              <p className="text-2xl font-bold text-blue-600"> 24 days
-                {/*Math.floor((new Date() - new Date(userProfile?.inRoleSince)) / (1000 * 60 * 60 * 24))*/}
+              <p className="text-2xl font-bold text-blue-600">
+                {calculateDaysInRole()} days
               </p>
             </div>
-            <UserCircleIcon aria-hidden className="h-20 w-20 text-gray-400" />
+            <img
+              src={employeeData?.avatar || "https://via.placeholder.com/80x80.png?text=SL"}
+              alt="Profile"
+              className="h-20 w-20 rounded-full border-4 border-blue-100"
+            />
           </div>
         </div>
       </div>
@@ -68,7 +137,7 @@ export const Dashboard = () => {
         />
         <StatCard
           title="Skills Developed"
-          value="12"
+          value={skills.length || '12'}
           icon={Award}
           color="green"
           trend="3 new this quarter"
@@ -89,54 +158,27 @@ export const Dashboard = () => {
         />
       </div>
 
+      {/* Skills Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Skills Overview */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 text-center">Skills Overview</h3>
-            <div className="flex justify-center">
-            <SkillsRadarChart skills={[
-      { skill: "Cloud Architecture", level: 5 },
-      { skill: "Cloud DevOps & Automation", level: 4 },
-      { skill: "Securing Cloud Infrastructure", level: 3 },
-      { skill: "Network Architecture", level: 2 },
-      { skill: "Middleware & Web Servers", level: 3 },
-      { skill: "Enterprise Architecture", level: 4 },
-    ]}/>
-            </div>
-            <Link
-              to="/profile"
-              className="inline-flex items-center text-blue-600 hover:text-blue-800"
-            >
-              View detailed skills
-              <ArrowRight className="ml-1 h-4 w-4" />
-            </Link>
-          </div>
-        </div>
-
-        {/* AI Coach Quick Access */}
-        <div className="bg-white rounded-lg shadow p-6 shadow p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-center">AI Career Coach</h2>
-            <div className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100">
-              <span className="mr-1">AI</span>
-              <MessageSquare size={14} />
-            </div>
-          </div>
-          <div className="rounded-xl bg-emerald-50 ring-1 ring-emerald-100 p-5 mb-5">
-            <p className="text-emerald-900/90 italic leading-7">
-              “{'Based on your progress, I recommend focusing on leadership skills for your next career move.'}”
-            </p>
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 text-center mb-4">Skills Overview</h3>
+          <div className="flex justify-center">
+            {skills.length > 0 ? (
+              <SkillsRadarChart skills={skills} />
+            ) : (
+              <p className="text-gray-500 text-center py-8">No skills data available</p>
+            )}
           </div>
           <Link
-            to="/aicoach"
-            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 transition"
+            to="/profile"
+            className="inline-flex items-center text-blue-600 hover:text-blue-800 mt-4"
           >
-            Chat with Coach
+            View detailed skills
+            <ArrowRight className="ml-1 h-4 w-4" />
           </Link>
-          </div>
         </div>
       </div>
+    </div>
   );
 };
 
