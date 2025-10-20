@@ -56,4 +56,178 @@ export const apiService = {
     getPathwaysHistory: (employeeId, limit = 20) => api.get(`/pathways/history/${employeeId}?limit=${limit}`),
 }
 
+export const mentorAPI = {
+  // Get skills taxonomy
+  getSkillsTaxonomy: async () => {
+    const response = await fetch(
+      `${API_BASE_URL}/mentors/skills-taxonomy`
+    );
+    if (!response.ok) throw new Error('Failed to fetch skills');
+    return response.json();
+  },
+
+  // Check if user is already a mentor
+  checkIfMentor: async (employeeId) => {
+    const response = await fetch(
+      `${API_BASE_URL}/mentors/check-if-mentor/${employeeId}`
+    );
+    if (!response.ok) throw new Error('Failed to check mentor status');
+    return response.json();
+  },
+
+  // Get mentor matches for a mentee
+  getMentorMatches: async (employeeId) => {
+    const response = await fetch(
+      `${API_BASE_URL}/mentors/matches/${employeeId}`
+    );
+    if (!response.ok) throw new Error('Failed to fetch mentor matches');
+    return response.json();
+  },
+
+  // Register as a mentor
+  registerAsMentor: async (employeeId, data) => {
+    const response = await fetch(
+      `${API_BASE_URL}/mentors/register`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employee_id: employeeId,
+          mentoring_skills: data.mentoring_skills,
+          max_mentees: data.max_mentees,
+          bio: data.bio
+        })
+      }
+    );
+    if (!response.ok) throw new Error('Failed to register as mentor');
+    return response.json();
+  },
+
+  // Request mentorship from a mentor
+  requestMentorship: async (menteeId, mentorId, goals, message, frequency, preferredTime) => {
+    const response = await fetch(
+      `${API_BASE_URL}/mentors/request-mentorship`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mentee_id: menteeId,
+          mentor_id: mentorId,
+          goals,
+          message,
+          frequency,
+          preferred_time: preferredTime
+        })
+      }
+    );
+    if (!response.ok) throw new Error('Failed to request mentorship');
+    return response.json();
+  },
+
+  // Get pending mentoring requests for a mentor
+  getMentoringRequests: async (mentorEmployeeId) => {
+    const response = await fetch(
+      `${API_BASE_URL}/mentors/requests/${mentorEmployeeId}`
+    );
+    if (!response.ok) throw new Error('Failed to fetch mentoring requests');
+    return response.json();
+  },
+
+  // Respond to a mentorship request (accept/reject)
+  respondToRequest: async (requestId, response) => {
+    const res = await fetch(
+      `${API_BASE_URL}/mentors/respond-to-request`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          request_id: requestId,
+          response
+        })
+      }
+    );
+    if (!res.ok) throw new Error('Failed to respond to request');
+    return res.json();
+  },
+
+  // Get active mentorships for a mentor
+  getActiveMentorships: async (mentorEmployeeId) => {
+    const response = await fetch(
+      `${API_BASE_URL}/mentors/active-mentorships/${mentorEmployeeId}`
+    );
+    if (!response.ok) throw new Error('Failed to fetch active mentorships');
+    return response.json();
+  },
+
+  // Get active mentors for a mentee
+  getMyActiveMentors: async (menteeId) => {
+    const response = await fetch(
+      `${API_BASE_URL}/mentors/my-mentors/${menteeId}`
+    );
+    if (!response.ok) throw new Error('Failed to fetch your mentors');
+    return response.json();
+  },
+
+  // Schedule a mentoring session
+  scheduleSession: async (mentorshipId, proposedDate, proposedTime, agenda, sessionType) => {
+    const response = await fetch(
+      `${API_BASE_URL}/mentors/schedule-session`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mentorship_id: mentorshipId,
+          proposed_date: proposedDate,
+          proposed_time: proposedTime,
+          agenda,
+          session_type: sessionType
+        })
+      }
+    );
+    if (!response.ok) throw new Error('Failed to schedule session');
+    return response.json();
+  },
+
+  // End a mentorship
+  endMentorship: async (mentorshipId, feedback, rating) => {
+    const response = await fetch(
+      `${API_BASE_URL}/mentors/end-mentorship`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mentorship_id: mentorshipId,
+          feedback,
+          rating
+        })
+      }
+    );
+    if (!response.ok) throw new Error('Failed to end mentorship');
+    return response.json();
+  },
+
+  // Get mentee's pending mentorship requests
+  getMyPendingRequests: async (menteeId) => {
+    const response = await fetch(
+      `${API_BASE_URL}/mentors/my-requests/${menteeId}`
+    );
+    if (!response.ok) throw new Error('Failed to fetch your requests');
+    return response.json();
+  },
+
+  // Cancel a pending mentorship request
+  cancelRequest: async (requestId) => {
+    const response = await fetch(
+      `${API_BASE_URL}/mentors/cancel-request`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request_id: requestId })
+      }
+    );
+    if (!response.ok) throw new Error('Failed to cancel request');
+    return response.json();
+  }
+};
+
 export default api;
