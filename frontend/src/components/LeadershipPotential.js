@@ -43,6 +43,7 @@ export default function LeadershipPotential({ employeeId , token }) {
     );
   }
   if (error) return <div className="text-red-700 bg-red-50 border border-red-200 rounded-md p-4">{error}</div>;
+  
   if (!data) {
     return (
       <div className="flex items-center justify-center min-h-[60vh] text-gray-500 text-lg">
