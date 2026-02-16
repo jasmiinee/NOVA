@@ -4,7 +4,9 @@ import { Brain, TrendingUp, AlertCircle, Target, Users, Lightbulb } from 'lucide
 
 export default function LeadershipPotential({ employeeId , token }) {
   const [data, setData] = useState(null);
+  
   const [loading, setLoading] = useState(true);
+  
   const [error, setError] = useState(null);
 
   useEffect(() => {
