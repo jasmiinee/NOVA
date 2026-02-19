@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Brain, TrendingUp, AlertCircle, Target, Users, Lightbulb } from 'lucide-react';
 
+
 export default function LeadershipPotential({ employeeId , token }) {
   const [data, setData] = useState(null);
   
