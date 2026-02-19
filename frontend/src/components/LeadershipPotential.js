@@ -10,6 +10,7 @@ export default function LeadershipPotential({ employeeId , token }) {
   
   const [error, setError] = useState(null);
 
+  
   useEffect(() => {
     const load = async () => {
       try {
