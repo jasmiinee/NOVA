@@ -130,6 +130,7 @@ export class LeadershipPotential {
       .map(e => `- ${e.type}: ${e.program_name}${e.description ? ` - ${e.description}` : ''}`)
       .join('\n');
 
+    
     return `
         You are an expert HR analyst specializing in leadership potential assessment.
         Analyze the following employee profile and predict their future leadership potential based on behavioral patterns, performance trajectory, and engagement indicators.
