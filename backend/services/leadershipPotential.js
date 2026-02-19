@@ -1,6 +1,7 @@
 import fetch from 'node-fetch';
 import { pool } from '../db.js';
 
+
 const AZURE_OPENAI_BASE = 'https://psacodesprint2025.azure-api.net';
 const DEPLOYMENT = 'gpt-4.1-nano';
 const API_VERSION = '2025-01-01-preview';
