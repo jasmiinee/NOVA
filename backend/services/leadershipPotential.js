@@ -204,7 +204,7 @@ export class LeadershipPotential {
         }
         \`\`\`
 
-        Be data-driven, fair, and specific in your assessment. Use only the information provided—do not invent data.`;
+        Be data-driven, fair, and specific in your assessment. Use only the information provided. Do not hallucinate or invent data.`;
   }
 
   async callAzureOpenAI(prompt) {
