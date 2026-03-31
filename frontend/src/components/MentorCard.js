@@ -15,7 +15,16 @@ export function MentorCard({ mentor, onRequest }) {
       <div className="flex gap-4 mb-4 pb-4 border-b text-sm">
         <div>
           <p className="text-gray-600">Experience</p>
-          <p className="font-bold">{mentor.years_experience}+ years</p>
+          <p className="font-bold">
+            {
+              (mentor.years_experience ?? (
+                (mentor.hire_date || mentor.in_role_since)
+                  ? Math.max(0, Math.floor((Date.now() - new Date(mentor.hire_date || mentor.in_role_since)) / (1000 * 60 * 60 * 24 * 365.25)))
+                  : 0
+              ))
+            }
+            + years
+          </p>
         </div>
         <div>
           <p className="text-gray-600">Available</p>

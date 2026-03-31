@@ -3,6 +3,59 @@ import { pool } from '../db.js';
 
 const router = express.Router();
 
+// GET /api/mentors/stats/:employeeId
+// Returns aggregate stats for the dashboard: total completed sessions,
+// total upcoming sessions, and active mentorships count for the given employee
+router.get('/mentors/stats/:employeeId', async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+
+    // Aggregate counts across mentorships where the user is mentor or mentee
+    const statsQuery = `
+      WITH my_mentorships AS (
+        SELECT mentorship_id
+        FROM mentorships
+        WHERE mentor_id = $1 OR mentee_id = $1
+      ),
+      completed AS (
+        SELECT COUNT(*)::int AS cnt
+        FROM mentoring_sessions s
+        JOIN my_mentorships m ON s.mentorship_id = m.mentorship_id
+        WHERE s.status = 'completed'
+      ),
+      upcoming AS (
+        SELECT COUNT(*)::int AS cnt
+        FROM mentoring_sessions s
+        JOIN my_mentorships m ON s.mentorship_id = m.mentorship_id
+        WHERE s.status IN ('pending','scheduled','accepted')
+          AND (COALESCE(s.proposed_date::date, CURRENT_DATE) >= CURRENT_DATE)
+      ),
+      active_ms AS (
+        SELECT COUNT(*)::int AS cnt
+        FROM mentorships
+        WHERE (mentor_id = $1 OR mentee_id = $1)
+          AND status = 'active'
+      )
+      SELECT 
+        (SELECT cnt FROM completed) AS total_sessions_completed,
+        (SELECT cnt FROM upcoming) AS total_upcoming_sessions,
+        (SELECT cnt FROM active_ms) AS active_mentorships_count;
+    `;
+
+    const result = await pool.query(statsQuery, [employeeId]);
+    const row = result.rows[0] || {
+      total_sessions_completed: 0,
+      total_upcoming_sessions: 0,
+      active_mentorships_count: 0
+    };
+
+    res.json(row);
+  } catch (err) {
+    console.error('Error fetching mentor stats:', err);
+    res.status(500).json({ error: 'Failed to fetch mentor stats' });
+  }
+});
+
 // GET /api/mentors/skills-taxonomy
 // Uses Supabase skills_taxonomy table which includes skill_name
 router.get('/mentors/skills-taxonomy', async (_req, res) => {
@@ -67,7 +120,12 @@ router.get('/mentors/matches/:employeeId', async (req, res) => {
         m.max_mentees,
         m.available_slots,
         m.mentoring_tagline as tagline,
-        e.hire_date
+        e.hire_date,
+        e.in_role_since,
+        GREATEST(
+          0,
+          FLOOR(EXTRACT(YEAR FROM age(current_date, COALESCE(e.hire_date, e.in_role_since))))
+        )::int AS years_experience
       FROM mentors m
       JOIN employees e ON m.employee_id = e.employee_id
       WHERE m.employee_id != $1 AND m.available_slots > 0
@@ -82,6 +140,21 @@ router.get('/mentors/matches/:employeeId', async (req, res) => {
       const skillCount = mentor.mentoring_skills?.length || 0;
       const matchScore = Math.min(100, 60 + (skillCount * 5) + (mentor.available_slots * 5));
 
+      // Compute years of experience (tenure) from hire_date, fallback to 0
+      // Prefer DB-computed value; fallback to client-side calc if needed
+      let yearsExperience = Number.isFinite(mentor.years_experience)
+        ? mentor.years_experience
+        : 0;
+      if (!Number.isFinite(yearsExperience)) {
+        const startStr = mentor.hire_date || mentor.in_role_since;
+        if (startStr) {
+          const start = new Date(startStr);
+          const now = new Date();
+          const diffYears = (now - start) / (1000 * 60 * 60 * 24 * 365.25);
+          yearsExperience = Math.max(0, Math.floor(diffYears));
+        }
+      }
+
       return {
         mentor_id: mentor.id,
         mentor_name: mentor.mentor_name,
@@ -90,7 +163,10 @@ router.get('/mentors/matches/:employeeId', async (req, res) => {
         available_slots: mentor.available_slots,
         match_score: matchScore,
         tagline: mentor.tagline,
-        bio: mentor.bio
+        bio: mentor.bio,
+        years_experience: yearsExperience,
+        hire_date: mentor.hire_date,
+        in_role_since: mentor.in_role_since
       };
     });
 

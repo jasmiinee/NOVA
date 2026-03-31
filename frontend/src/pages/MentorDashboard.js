@@ -1,8 +1,11 @@
+// frontend/src/pages/MentorDashboard.js
 import { useEffect, useState } from 'react';
 import { mentorAPI } from '../services/api';
 import { EndMentorshipModal } from '../components/EndMentorshipModal';
+import { useAuth } from '../services/AuthContext';
 
-export function MentorDashboard({ employeeId }) {
+export function MentorDashboard() {
+  const { user } = useAuth();
   const [incomingRequests, setIncomingRequests] = useState([]);
   const [activeMentorships, setActiveMentorships] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,9 +13,13 @@ export function MentorDashboard({ employeeId }) {
   const [selectedMentorshipToEnd, setSelectedMentorshipToEnd] = useState(null);
   const [showEndModal, setShowEndModal] = useState(false);
 
+  const employeeId = user?.employeeId;
+
   useEffect(() => {
-    loadMentorData();
-  }, []);
+    if (employeeId) {
+      loadMentorData();
+    }
+  }, [employeeId]);
 
   const loadMentorData = async () => {
     setLoading(true);
@@ -148,70 +155,70 @@ export function MentorDashboard({ employeeId }) {
       )}
 
       {/* Active Mentorships Tab */}
-        {selectedTab === 'active' && (
+      {selectedTab === 'active' && (
         <div className="space-y-4">
-            {activeMentorships.length > 0 ? (
+          {activeMentorships.length > 0 ? (
             activeMentorships.map((mentorship) => (
-                <div key={mentorship.mentorship_id} className="bg-white rounded-lg shadow p-6 border-l-4 border-green-400">
+              <div key={mentorship.mentorship_id} className="bg-white rounded-lg shadow p-6 border-l-4 border-green-400">
                 <div className="flex justify-between items-start mb-4">
-                    <div>
-                    <h3 className="text-lg font-bold">{mentorship.mentor_name}</h3>
-                    <p className="text-gray-600">{mentorship.mentor_role}</p>
-                    </div>
-                    <span className="bg-green-100 text-green-800 px-3 py-1 rounded text-xs font-bold">
+                  <div>
+                    <h3 className="text-lg font-bold">{mentorship.mentee_name}</h3>
+                    <p className="text-gray-600">{mentorship.mentee_role}</p>
+                  </div>
+                  <span className="bg-green-100 text-green-800 px-3 py-1 rounded text-xs font-bold">
                     Active
-                    </span>
+                  </span>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 mb-4 pb-4 border-b">
-                    <div>
+                  <div>
                     <p className="text-sm text-gray-600">Sessions Completed</p>
                     <p className="text-2xl font-bold">{mentorship.sessions_completed}</p>
-                    </div>
-                    <div>
+                  </div>
+                  <div>
                     <p className="text-sm text-gray-600">Next Session</p>
                     <p className="text-sm font-bold">{mentorship.next_session_date}</p>
-                    </div>
-                    <div>
+                  </div>
+                  <div>
                     <p className="text-sm text-gray-600">Duration</p>
                     <p className="text-sm font-bold">{mentorship.duration_months} months</p>
-                    </div>
+                  </div>
                 </div>
 
                 <div className="flex gap-3">
-                    <button className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">
+                  <button className="flex-1 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">
                     Message
-                    </button>
-                    <button className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                  </button>
+                  <button className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                     Schedule Session
-                    </button>
-                    <button
+                  </button>
+                  <button
                     onClick={() => handleEndMentorship(mentorship)}
                     className="flex-1 px-4 py-2 border border-red-300 text-red-600 rounded hover:bg-red-50"
-                    >
+                  >
                     End Mentorship
-                    </button>
+                  </button>
                 </div>
-                </div>
+              </div>
             ))
-            ) : (
+          ) : (
             <div className="text-center py-12">
-                <p className="text-gray-600">No active mentorships yet</p>
+              <p className="text-gray-600">No active mentorships yet</p>
             </div>
-            )}
+          )}
         </div>
-        )}
+      )}
 
-        {showEndModal && selectedMentorshipToEnd && (
+      {showEndModal && selectedMentorshipToEnd && (
         <EndMentorshipModal
-            mentorship={selectedMentorshipToEnd}
-            onClose={() => {
+          mentorship={selectedMentorshipToEnd}
+          onClose={() => {
             setShowEndModal(false);
             setSelectedMentorshipToEnd(null);
-            }}
-            onSuccess={loadMentorData}
+          }}
+          onSuccess={loadMentorData}
         />
-        )}
+      )}
     </div>
   );
 }

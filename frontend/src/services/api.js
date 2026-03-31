@@ -168,6 +168,15 @@ export const mentorAPI = {
     return response.json();
   },
 
+  // Get aggregate mentorship stats for dashboard
+  getMentorStats: async (employeeId) => {
+    const response = await fetch(
+      `${API_BASE_URL}/mentors/stats/${employeeId}`
+    );
+    if (!response.ok) throw new Error('Failed to fetch mentor stats');
+    return response.json();
+  },
+
   // Schedule a mentoring session
   scheduleSession: async (mentorshipId, proposedDate, proposedTime, agenda, sessionType) => {
     const response = await fetch(

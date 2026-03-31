@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../services/AuthContext';
 import { SkillsRadarChart } from '../components/SkillsRadarChart';
+import { mentorAPI } from '../services/api';
 
 export const Dashboard = () => {
   const { user, token } = useAuth();
@@ -24,6 +25,7 @@ export const Dashboard = () => {
   const [leadershipTier, setLeadershipTier] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mentorStats, setMentorStats] = useState(null);
 
   useEffect(() => {
     const fetchEmployeeData = async () => {
@@ -108,6 +110,17 @@ export const Dashboard = () => {
     }
   };
   ensureLeadershipScore();
+
+  const fetchMentorStats = async () => {
+    try {
+      if (!user?.employeeId) return;
+      const stats = await mentorAPI.getMentorStats(user.employeeId);
+      setMentorStats(stats);
+    } catch (e) {
+      console.error('Error fetching mentor stats:', e);
+    }
+  };
+  fetchMentorStats();
   }, [user, token]);
 
   if (loading) {
@@ -168,10 +181,10 @@ export const Dashboard = () => {
         />
         <StatCard
           title="Mentor Sessions"
-          value="6"
+          value={mentorStats ? String(mentorStats.total_sessions_completed) : '—'}
           icon={Users}
           color="orange"
-          trend="2 scheduled"
+          trend={mentorStats ? `${mentorStats.total_upcoming_sessions} scheduled` : undefined}
         />
       </div>
 

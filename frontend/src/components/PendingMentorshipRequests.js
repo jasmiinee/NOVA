@@ -1,14 +1,21 @@
+// frontend/src/components/PendingMentorshipRequests.js
 import { useEffect, useState } from 'react';
 import { mentorAPI } from '../services/api';
+import { useAuth } from '../services/AuthContext';
 
-export function PendingMentorshipRequests({ employeeId }) {
+export function PendingMentorshipRequests() {
+  const { user } = useAuth();
   const [pendingRequests, setPendingRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('pending');
 
+  const employeeId = user?.employeeId;
+
   useEffect(() => {
-    loadPendingRequests();
-  }, []);
+    if (employeeId) {
+      loadPendingRequests();
+    }
+  }, [employeeId]);
 
   const loadPendingRequests = async () => {
     setLoading(true);
